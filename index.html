@@ -575,6 +575,17 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
 .mini-top .pill-ghost{background:none;color:var(--cocoa,#372a22);border:1.5px solid rgba(55,42,34,.3);padding:7px 13px}
 .status-banner{max-width:900px;margin:14px auto 0;padding:10px 16px;border-radius:12px;background:#fff3d6;border:1px solid #e8cf8a;font-size:.86rem;color:#5c4a1e;display:none}
 .status-banner.show{display:block}
+.freq-wrap{padding:14px var(--gutter,20px) 4px}
+.freq-title{font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3,#8a7f74);margin:0 0 8px}
+.freq-scroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
+.freq-scroll::-webkit-scrollbar{display:none}
+.freq-card{flex:0 0 auto;width:132px;background:#fff;border:1px solid rgba(55,42,34,.1);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.freq-card .freq-ic{width:100%;height:64px;border-radius:10px;background:var(--cream-2,#efe6d8);display:flex;align-items:center;justify-content:center}
+.freq-card .freq-ic svg{width:28px;height:28px;color:var(--gold-lo,#7c6230)}
+.freq-card .freq-nm{font-size:.8rem;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.2em}
+.freq-card .freq-add{width:100%;border-radius:99px;border:1px solid rgba(38,38,38,.3);background:var(--paper);padding:6px 8px;font-weight:600;font-size:.76rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+.freq-card .freq-add[aria-pressed="true"]{background:var(--gold);color:#fff;border-color:var(--gold)}
+.freq-card .add-picker{width:100%;justify-content:space-between}
 .wrap.prod-grid{padding-top:6px}
 @media (max-width:920px){ .mini-top{padding:10px 14px} }
 @media (max-width:480px){
@@ -645,6 +656,10 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   </div>
 </div>
 <div id="statusBanner" class="status-banner"></div>
+<div id="freqProductsWrap" class="freq-wrap" hidden>
+  <p class="freq-title">Tus productos habituales</p>
+  <div class="freq-scroll" id="freqScroll"></div>
+</div>
 
 <main id="main">
 <section class="page" data-page="productos">
@@ -1172,6 +1187,8 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   var params = new URLSearchParams(location.search);
   var clientPhone = (params.get("phone") || "").replace(/\D/g, "");
   var lastOrderRaw = params.get("last") || "";
+  var repeatOrderId = params.get("repeat_order") || "";
+  var freqRaw = params.get("freq") || "";
 
   if(!clientPhone){
     var banner = document.getElementById("statusBanner");
@@ -1184,6 +1201,13 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   var lastOrderItems = lastOrderRaw.split(",").map(function(pair){
     var m = pair.match(/^(.+)x(\d+)$/);
     return m ? { id: m[1], qty: parseInt(m[2], 10) } : null;
+  }).filter(function(x){ return x && byId[x.id]; });
+
+  // Parseo de los productos habituales del cliente, codificados como "COD1xVECES1,COD2xVECES2..."
+  // El bot ya los manda ordenados de más a menos pedidos, así que respetamos ese orden tal cual.
+  var freqProducts = freqRaw.split(",").map(function(pair){
+    var m = pair.match(/^(.+)x(\d+)$/);
+    return m ? { id: m[1], timesOrdered: parseInt(m[2], 10) } : null;
   }).filter(function(x){ return x && byId[x.id]; });
 
   var qty = {};
@@ -1212,6 +1236,25 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   function updatePickerUI(id){
     var el = document.querySelector('[data-picker-for="'+id+'"] .add-picker-qty');
     if(el) el.textContent = getQty(id);
+  }
+
+  // Tarjetas deslizables de "productos habituales": todo lo que el cliente ha pedido alguna
+  // vez, ordenado de más a menos veces pedido (el bot ya manda freqProducts en ese orden).
+  function renderFreqProducts(){
+    var wrap = document.getElementById("freqProductsWrap");
+    var scroll = document.getElementById("freqScroll");
+    if(!freqProducts.length){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    scroll.innerHTML = freqProducts.map(function(f){
+      var p = byId[f.id]; if(!p) return "";
+      var fm = famBy[p.fam];
+      var on = sel.indexOf(f.id) > -1;
+      return '<div class="freq-card" data-freq-id="'+f.id+'">'+
+        '<div class="freq-ic">'+ic(fm ? fm.ic : "i-box", "gold")+'</div>'+
+        '<span class="freq-nm">'+esc(p.name)+'</span>'+
+        '<button type="button" class="freq-add" aria-pressed="'+on+'" aria-label="'+(on?"Quitar ":"Añadir ")+esc(p.name)+' del pedido">'+ic(on?"i-check":"i-plus")+(on?"En el pedido":"Añadir")+'</button>'+
+        '</div>';
+    }).join("");
   }
 
   var WA_BOT_NUMBER = "15551498220"; // número de prueba de Meta, sin '+'. Cambiar al número de producción cuando exista.
@@ -1288,6 +1331,23 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   renderSheet();
   renderCounts();
   renderLastOrderPane();
+  renderFreqProducts();
+
+  // Si venimos del botón "Modificar" (el bot nos manda repeat_order con el id del pedido a
+  // modificar), precargamos directamente los productos y cantidades del último pedido en el
+  // pedido actual, y abrimos el panel ya desplegado para que el cliente vea de entrada qué
+  // tenía pedido y pueda tocarlo, en vez de tener que ir él mismo a "Último pedido" y confirmar.
+  if(repeatOrderId && lastOrderItems.length){
+    lastOrderItems.forEach(function(it){
+      if(sel.indexOf(it.id) === -1) sel.push(it.id);
+      setQty(it.id, it.qty);
+    });
+    store.set("bg-hoja", sel);
+    renderProducts();
+    renderSheet();
+    renderCounts();
+    renderFreqProducts();
+  }
 
   // Panel deslizante del pedido: abrir/cerrar con el botón fijo abajo, o desde los botones
   // de la cabecera ("Mi pedido" y "Último pedido"), que también deben desplegarlo.
@@ -1300,6 +1360,10 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
     orderHandleEl.setAttribute("aria-expanded", "true");
     if(tab) setOrderTab(tab);
   }
+
+  // Tras precargar el pedido a modificar (ver arriba), abrimos el panel directamente en
+  // "Pedido actual" para que el cliente vea de entrada lo que tenía y pueda ajustarlo.
+  if(repeatOrderId && lastOrderItems.length){ openOrderSheet("current"); }
 
   orderHandleEl.addEventListener("click", function(){
     var open = orderSheetEl.classList.toggle("open");
@@ -1405,16 +1469,23 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
       if(getQty(pid) <= 1){ delete qty[pid]; renderProducts(); return; } // vuelve al botón "Añadir" normal
       setQty(pid, getQty(pid)-1); updatePickerUI(pid); return;
     }
-    if(t.dataset.pickerOk){ var pid=t.dataset.pickerOk; toggle(pid); renderProducts(); return; }
+    if(t.dataset.pickerOk){ var pid=t.dataset.pickerOk; toggle(pid); renderProducts(); renderFreqProducts(); return; }
 
     var row = t.closest(".prow,.pcard");
     if(t.classList.contains("add") && row){
       var pid = row.dataset.id;
-      if(sel.indexOf(pid) > -1){ toggle(pid, t); return; } // ya está añadido: quitar directamente
+      if(sel.indexOf(pid) > -1){ toggle(pid, t); renderFreqProducts(); return; } // ya está añadido: quitar directamente
       openAddPicker(pid, t);
       return;
     }
-    if(t.dataset.remove){ toggle(t.dataset.remove); return; }
+    var freqCard = t.closest(".freq-card");
+    if(t.classList.contains("freq-add") && freqCard){
+      var pid = freqCard.dataset.freqId;
+      if(sel.indexOf(pid) > -1){ toggle(pid); renderProducts(); renderFreqProducts(); return; } // ya está: quitar directamente
+      openAddPicker(pid, t);
+      return;
+    }
+    if(t.dataset.remove){ toggle(t.dataset.remove); renderFreqProducts(); return; }
     if(t.dataset.view){ state.view = t.dataset.view; renderProducts(); return; }
   });
 
