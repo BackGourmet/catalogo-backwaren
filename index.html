@@ -123,7 +123,7 @@ p{margin:0;text-wrap:pretty}
 .btn-sm{min-height:42px;padding:0 18px;font-size:.92rem}
 .pill{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:99px;border:1px solid rgba(38,38,38,.22);background:var(--paper);text-decoration:none;font-weight:600;font-size:.9rem;cursor:pointer;transition:border-color .3s,background .3s}
 .pill:hover{border-color:var(--ink)}
-.pill .count{min-width:22px;height:22px;border-radius:99px;display:inline-grid;place-items:center;background:var(--noir);color:var(--cream);font-size:.74rem;font-variant-numeric:tabular-nums;padding:0 6px}
+.pill .count{min-width:18px;height:18px;border-radius:99px;display:inline-grid;place-items:center;background:var(--noir);color:var(--cream);font-size:.66rem;font-variant-numeric:tabular-nums;padding:0 5px}
 .pill .count.bump{animation:bump .6s var(--ease)}
 @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.45);background:var(--gold)}100%{transform:scale(1)}}
 .link{display:inline-flex;align-items:center;gap:8px;font-weight:600;text-decoration:none;position:relative;padding-bottom:3px;background:none;border:0;cursor:pointer}
@@ -584,13 +584,15 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
 .mini-top .brand{font-family:var(--serif,serif);font-weight:600;font-size:1.05rem;color:var(--cocoa,#372a22);display:flex;align-items:center;gap:8px}
 .brand-logo{width:26px;height:26px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
 .brand-logo-shine{background:var(--grad-gold);background-size:260% 100%;animation:shine 7s linear infinite;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
-.mini-top .pill{background:var(--cocoa,#372a22);color:#fff;padding:8px 14px;border-radius:99px;font-size:.82rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font-family:inherit}
-.mini-top .pill-ghost{background:none;color:var(--cocoa,#372a22);border:1.5px solid rgba(55,42,34,.3);padding:7px 13px}
+.mini-top .pill{background:var(--cocoa,#372a22);color:#fff;padding:5px 9px;border-radius:99px;font-size:.68rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;border:0;cursor:pointer;font-family:inherit}
+.mini-top .pill-ghost{background:none;color:var(--cocoa,#372a22);border:1.5px solid rgba(55,42,34,.3);padding:5px 10px}
 .status-banner{max-width:900px;margin:14px auto 0;padding:10px 16px;border-radius:12px;background:#fff3d6;border:1px solid #e8cf8a;font-size:.86rem;color:#5c4a1e;display:none}
 .status-banner.show{display:block}
-.freq-toggle-sticky{position:sticky;top:calc(var(--mini-top-h,56px) + var(--search-bar-h,56px));z-index:53;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px var(--gutter,20px);background:var(--gold-hi,#efe0b4);border:0;border-bottom:1px solid rgba(124,98,48,.25);font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-lo,#7c6230);cursor:pointer}
-.freq-toggle-sticky svg{transition:transform .25s ease;color:var(--gold-lo,#7c6230)}
+.freq-toggle-sticky{position:sticky;top:calc(var(--mini-top-h,56px) + var(--search-bar-h,56px));z-index:53;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px var(--gutter,20px);background:#1a1410;border:0;border-bottom:1px solid rgba(0,0,0,.2);font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;cursor:pointer}
+.freq-toggle-sticky svg{transition:transform .25s ease;color:#fff}
 .freq-toggle-sticky[aria-expanded="true"] svg{transform:rotate(90deg) !important}
+.popover-freq{padding:14px;max-width:none;width:calc(100% - 32px)}
+.popover-freq .freq-scroll{margin:0}
 .freq-wrap{padding:12px var(--gutter,20px) 4px}
 .freq-wrap[hidden]{display:none}
 .freq-scroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
@@ -610,8 +612,8 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
 @media (max-width:920px){ .mini-top{padding:10px 14px} }
 @media (max-width:480px){
   .mini-top .brand{font-size:.92rem}
-  .mini-top .pill{font-size:.76rem;padding:7px 11px}
-  .mini-top .pill-ghost{padding:6px 10px}
+  .mini-top .pill{font-size:.66rem;padding:5px 8px}
+  .mini-top .pill-ghost{padding:5px 9px}
 }
 </style>
 </head>
@@ -675,12 +677,16 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   </div>
 </div>
 <div id="statusBanner" class="status-banner"></div>
+<div id="freqProductsWrap" class="freq-wrap" hidden>
+  <div class="freq-scroll" id="freqScroll"></div>
+</div>
 <button type="button" id="freqToggle" class="freq-toggle-sticky" aria-expanded="false" hidden>
   <span>Tus productos habituales</span>
   <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;transform:rotate(-90deg)"><use href="#i-arrow"/></svg>
 </button>
-<div id="freqProductsWrap" class="freq-wrap" hidden>
-  <div class="freq-scroll" id="freqScroll"></div>
+<div class="popover popover-freq" id="freqPopover" hidden>
+  <div class="popover-arrow"></div>
+  <div class="freq-scroll" id="freqScrollPopover"></div>
 </div>
 
 <main id="main">
@@ -1269,13 +1275,12 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   // Tarjetas deslizables de "productos habituales": todo lo que el cliente ha pedido alguna
   // vez, ordenado de más a menos veces pedido (el bot ya manda freqProducts en ese orden).
   function renderFreqProducts(){
-    var toggle = document.getElementById("freqToggle");
     var wrap = document.getElementById("freqProductsWrap");
     var scroll = document.getElementById("freqScroll");
-    if(!freqProducts.length){ toggle.hidden = true; wrap.hidden = true; return; }
-    toggle.hidden = false;
-    // No tocamos wrap.hidden aquí: lo controla el propio botón toggle (colapsado por defecto).
-    scroll.innerHTML = freqProducts.map(function(f){
+    var scrollPop = document.getElementById("freqScrollPopover");
+    if(!freqProducts.length){ wrap.hidden = true; return; }
+    wrap.hidden = false; // las tarjetas en línea están siempre visibles arriba, mientras haya productos
+    var html = freqProducts.map(function(f){
       var p = byId[f.id]; if(!p) return "";
       var fm = famBy[p.fam];
       var on = sel.indexOf(f.id) > -1;
@@ -1285,6 +1290,8 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
         '<button type="button" class="freq-add" aria-pressed="'+on+'" aria-label="'+(on?"Quitar ":"Añadir ")+esc(p.name)+' del pedido">'+ic(on?"i-check":"i-plus")+(on?"Añadido":"Añadir")+'</button>'+
         '</div>';
     }).join("");
+    scroll.innerHTML = html;
+    if(scrollPop) scrollPop.innerHTML = html; // mismo contenido duplicado en el popover flotante
   }
 
   var WA_BOT_NUMBER = "15551498220"; // número de prueba de Meta, sin '+'. Cambiar al número de producción cuando exista.
@@ -1363,17 +1370,55 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
   renderLastOrderPane();
   renderFreqProducts();
 
-  // Botón "Tus productos habituales": fijo arriba, colapsado por defecto; al pulsarlo
-  // despliega/esconde las tarjetas de productos pedidos alguna vez.
+  // "Tus productos habituales": las tarjetas en línea (arriba del todo) están siempre visibles
+  // mientras haya productos. Cuando el scroll las saca de la pantalla, aparece el botón fijo
+  // oscuro "Tus productos habituales"; al pulsarlo, despliega las mismas tarjetas flotando
+  // justo encima de la barra de búsqueda, sin empujar el resto del contenido.
   (function(){
+    var inlineWrap = document.getElementById("freqProductsWrap");
     var toggle = document.getElementById("freqToggle");
-    var wrap = document.getElementById("freqProductsWrap");
-    if(!toggle || !wrap) return;
-    toggle.addEventListener("click", function(){
-      var open = wrap.hidden;
-      wrap.hidden = !open;
-      toggle.setAttribute("aria-expanded", open);
+    var popover = document.getElementById("freqPopover");
+    var searchBar = document.querySelector(".search-bar-sticky");
+    if(!inlineWrap || !toggle || !popover) return;
+
+    function closePopover(){
+      popover.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+    }
+
+    function openPopover(){
+      if(!searchBar) return;
+      var r = searchBar.getBoundingClientRect();
+      popover.hidden = false;
+      popover.style.left = "16px";
+      popover.style.top = (r.bottom + 6) + "px";
+      var arrow = popover.querySelector(".popover-arrow");
+      if(arrow) arrow.style.left = "24px";
+      toggle.setAttribute("aria-expanded", "true");
+    }
+
+    toggle.addEventListener("click", function(e){
+      e.stopPropagation();
+      if(popover.hidden) openPopover(); else closePopover();
     });
+    // No usamos stopPropagation en el popover: así los clics en "Añadir" dentro de él
+    // (data-freq-id, data-picker-*) siguen llegando con normalidad al delegado de document.
+    document.addEventListener("click", function(e){
+      if(!popover.hidden && !popover.contains(e.target) && e.target !== toggle) closePopover();
+    });
+    window.addEventListener("resize", closePopover);
+    window.addEventListener("scroll", closePopover, true);
+
+    // El botón sticky solo debe aparecer cuando las tarjetas en línea (arriba) ya no son
+    // visibles en pantalla; mientras se vean arriba, el botón permanece oculto.
+    if("IntersectionObserver" in window){
+      var observer = new IntersectionObserver(function(entries){
+        var visible = entries[0].isIntersecting;
+        toggle.hidden = visible || inlineWrap.hidden;
+        if(visible) closePopover();
+      }, { threshold: 0 });
+      observer.observe(inlineWrap);
+    }
   })();
 
   // Si venimos del botón "Modificar" (el bot nos manda repeat_order con el id del pedido a
