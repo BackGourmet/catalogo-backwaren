@@ -584,16 +584,17 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
 .mini-top .brand{font-family:var(--serif,serif);font-weight:600;font-size:1.05rem;color:var(--cocoa,#372a22);display:flex;align-items:center;gap:8px}
 .brand-logo{width:26px;height:26px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
 .brand-logo-shine{background:var(--grad-gold);background-size:260% 100%;animation:shine 7s linear infinite;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
-.mini-top .pill{background:var(--cocoa,#372a22);color:#fff;padding:5px 9px;border-radius:99px;font-size:.68rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;border:0;cursor:pointer;font-family:inherit}
-.mini-top .pill-ghost{background:none;color:var(--cocoa,#372a22);border:1.5px solid rgba(55,42,34,.3);padding:5px 10px}
+.mini-top .pill{background:var(--cocoa,#372a22);color:#fff;padding:5px 7px;border-radius:99px;font-size:.66rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:3px;border:0;cursor:pointer;font-family:inherit}
+.mini-top .pill-ghost{background:none;color:var(--cocoa,#372a22);border:1.5px solid rgba(55,42,34,.3);padding:5px 8px}
 .status-banner{max-width:900px;margin:14px auto 0;padding:10px 16px;border-radius:12px;background:#fff3d6;border:1px solid #e8cf8a;font-size:.86rem;color:#5c4a1e;display:none}
 .status-banner.show{display:block}
 .freq-toggle-sticky{position:sticky;top:calc(var(--mini-top-h,56px) + var(--search-bar-h,56px));z-index:53;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px var(--gutter,20px);background:#1a1410;border:0;border-bottom:1px solid rgba(0,0,0,.2);font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;cursor:pointer}
 .freq-toggle-sticky svg{transition:transform .25s ease;color:#fff}
-.freq-toggle-sticky[aria-expanded="true"] svg{transform:rotate(90deg) !important}
+.freq-toggle-sticky[aria-expanded="true"] svg{transform:rotate(-90deg) !important}
 .popover-freq{padding:14px;max-width:none;width:calc(100% - 32px)}
 .popover-freq .freq-scroll{margin:0}
 .freq-wrap{padding:12px var(--gutter,20px) 4px}
+.freq-title{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3,#8a7f74);margin:0 0 8px}
 .freq-wrap[hidden]{display:none}
 .freq-scroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
 .freq-scroll::-webkit-scrollbar{display:none}
@@ -678,11 +679,12 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
 </div>
 <div id="statusBanner" class="status-banner"></div>
 <div id="freqProductsWrap" class="freq-wrap" hidden>
+  <p class="freq-title">Tus productos habituales</p>
   <div class="freq-scroll" id="freqScroll"></div>
 </div>
 <button type="button" id="freqToggle" class="freq-toggle-sticky" aria-expanded="false" hidden>
   <span>Tus productos habituales</span>
-  <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;transform:rotate(-90deg)"><use href="#i-arrow"/></svg>
+  <svg class="ic" aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;transform:rotate(90deg)"><use href="#i-arrow"/></svg>
 </button>
 <div class="popover popover-freq" id="freqPopover" hidden>
   <div class="popover-arrow"></div>
@@ -1407,7 +1409,16 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
       if(!popover.hidden && !popover.contains(e.target) && e.target !== toggle) closePopover();
     });
     window.addEventListener("resize", closePopover);
-    window.addEventListener("scroll", closePopover, true);
+    // Fase de captura para detectar el scroll de la página (que si mueve el botón sticky de
+    // sitio, debe cerrar el popover); pero si el scroll ocurre DENTRO del propio popover
+    // (el carrusel horizontal de tarjetas), lo ignoramos para que el cliente pueda desplazarse
+    // por las tarjetas sin que el popover se cierre solo.
+    window.addEventListener("scroll", function(e){
+      // e.target puede ser document (scroll de página) en vez de un elemento normal: solo
+      // comprobamos "contains" cuando es un nodo de verdad, para no romper el cierre general.
+      if(e.target instanceof Element && popover.contains(e.target)) return;
+      closePopover();
+    }, true);
 
     // El botón sticky solo debe aparecer cuando las tarjetas en línea (arriba) ya no son
     // visibles en pantalla; mientras se vean arriba, el botón permanece oculto.
