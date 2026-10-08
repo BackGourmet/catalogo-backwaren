@@ -1107,6 +1107,7 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
     $("#fichaBody").innerHTML =
       '<p class="f-kick"><span class="fam">'+ic(f.ic,"gold")+esc(f.name)+'</span>'+(p.sub?'<span>'+esc(p.sub)+'</span>':'')+'<span>'+esc((USOS.filter(function(u){ return u[0] === p.uso; })[0] || ["",""])[1])+'</span></p>'+
       '<h2 id="fichaTitle">'+esc(p.name)+'</h2><p class="f-ref">'+(p.cod ? "Cód. art. "+esc(p.cod) : "Código pendiente de cargar desde Sage")+(p.de ? ' · <i lang="de">'+esc(p.de)+'</i>' : '')+'</p>'+
+      '<div class="stock-slot" data-id="'+esc(p.id)+'"></div>'+
       (p.desc ? '<p class="f-lead">'+esc(p.desc)+'</p>' : '')+
       '<div class="gal"><div class="gal-main '+cls+'">'+main+'</div>'+
       '<div class="gal-tabs" role="tablist" aria-label="Fotos y vídeo">'+tabs.map(function(x){ return '<button type="button" role="tab" data-gtab="'+x[0]+'" aria-selected="'+(x[0]===t[0])+'">'+ic(x[2])+esc(x[1])+'</button>'; }).join("")+'</div></div>'+
@@ -1608,6 +1609,61 @@ body{background:var(--cream,#f4ece1);padding-top:var(--safe-top);padding-bottom:
       if(sel.length && clientPhone){ send.href = "https://wa.me/" + WA_BOT_NUMBER + "?text=" + encodeURIComponent(pedidoWebMsg()); }
     }
   });
+})();
+</script>
+<script>
+/* Estado de stock en directo (solo Disponible / Pocas unidades / Agotado, nunca cifras).
+   Lee la tabla pública product_stock_public con la clave publicable de Supabase.
+   Si falla la red o un producto no está en la tabla, no se pinta nada. No toca el pedido. */
+(function () {
+  var SB_URL = 'https://bjtwtltxqodgickepcen.supabase.co';
+  var SB_KEY = 'sb_publishable_yo0SNKFj3Nx0oWe0p5IOTw_67jsPehp';
+  var REFRESH_MS = 60000;
+  var LABELS = {
+    disponible:     { t: 'Disponible',     c: '#2e7d32' },
+    pocas_unidades: { t: 'Pocas unidades', c: '#e08a00' },
+    agotado:        { t: 'Agotado',        c: '#c62828' }
+  };
+  var stock = {};
+  function norm(v) { return String(v == null ? '' : v).trim().toUpperCase().replace(/^0+(?=.)/, ''); }
+  function badgeHtml(s) {
+    var l = LABELS[s];
+    return '<span class="stock-badge" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--sans,inherit);font-size:.75rem;font-weight:600;color:' + l.c + '"><span style="width:8px;height:8px;border-radius:50%;background:' + l.c + '"></span>' + l.t + '</span>';
+  }
+  // Dónde va el badge: bajo el nombre en la lista, en el cuerpo de la tarjeta y bajo el código en la ficha.
+  function slotOf(el) {
+    if (el.classList.contains('stock-slot')) return el;
+    if (el.classList.contains('pcard')) return el.querySelector('.pc-body');
+    var nm = el.querySelector('.nm-btn');
+    return nm && nm.parentNode;
+  }
+  function decorate(el) {
+    var box = slotOf(el); if (!box) return;
+    var st = stock[norm(el.getAttribute('data-id'))];
+    var old = box.querySelector(':scope > .stock-badge-wrap');
+    if (!LABELS[st]) { if (old) old.remove(); return; }
+    if (old && old.getAttribute('data-st') === st) return; // sin cambios: no tocar el DOM (evita bucles del observer)
+    if (!old) { old = document.createElement('div'); old.className = 'stock-badge-wrap'; old.style.marginTop = '4px'; box.appendChild(old); }
+    old.setAttribute('data-st', st);
+    old.innerHTML = badgeHtml(st);
+  }
+  function decorateAll() {
+    document.querySelectorAll('li.prow[data-id], li.pcard[data-id], #fichaBody .stock-slot[data-id]').forEach(decorate);
+  }
+  function load() {
+    fetch(SB_URL + '/rest/v1/product_stock_public?select=sku,status', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (!Array.isArray(rows)) return; // error: se mantiene lo último que se pintó
+        var m = {};
+        rows.forEach(function (r) { if (r && r.sku) m[norm(r.sku)] = r.status; });
+        stock = m; decorateAll();
+      }).catch(function () {});
+  }
+  var pending = false;
+  new MutationObserver(function () { if (pending) return; pending = true; requestAnimationFrame(function () { pending = false; decorateAll(); }); }).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+  load(); setInterval(load, REFRESH_MS);
 })();
 </script>
 </body>
